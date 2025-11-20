@@ -1,11 +1,10 @@
 import API from "./axiosInstance";
 
-// ✅ LOGIN USER
+// LOGIN USER
 export const login = async (email, password) => {
   try {
     const response = await API.post("/auth/login", { email, password });
 
-    // Save token & user info to localStorage
     if (response.data.token) {
       localStorage.setItem("token", response.data.token);
     }
@@ -16,18 +15,21 @@ export const login = async (email, password) => {
     return response.data;
   } catch (error) {
     console.error("Login error:", error);
-    throw error.response?.data?.message || error.message || "Login failed";
+    const msg =
+      error.response?.data?.message ||
+      error.message ||
+      "Login failed";
+    throw new Error(msg);
   }
 };
 
-// ✅ REGISTER USER
+// REGISTER USER
 export const register = async (userData) => {
   try {
     console.log("📤 Sending registration request:", userData);
     const response = await API.post("/auth/register", userData);
     console.log("📥 Registration response received:", response.data);
 
-    // Save token & user info to localStorage (same as login)
     if (response.data.token) {
       localStorage.setItem("token", response.data.token);
     }
@@ -43,30 +45,33 @@ export const register = async (userData) => {
       status: error.response?.status,
       statusText: error.response?.statusText,
     });
-    
-    // Extract error message from various possible locations
-    const errorMessage = 
-      error.response?.data?.message || 
+
+    const msg =
+      error.response?.data?.message ||
       error.response?.data?.error ||
-      error.message || 
-      "Registration failed. Please check your connection and try again.";
-    
-    throw new Error(errorMessage);
+      error.message ||
+      "Registration failed";
+
+    throw new Error(msg);
   }
 };
 
-// ✅ GET CURRENT USER (Protected)
+// GET CURRENT USER
 export const getCurrentUser = async () => {
   try {
     const response = await API.get("/auth/me");
     return response.data;
   } catch (error) {
     console.error("Fetch user error:", error);
-    throw error.response?.data?.message || error.message || "Failed to fetch user data";
+    const msg =
+      error.response?.data?.message ||
+      error.message ||
+      "Failed to fetch user data";
+    throw new Error(msg);
   }
 };
 
-// ✅ LOGOUT
+// LOGOUT
 export const logout = () => {
   localStorage.removeItem("token");
   localStorage.removeItem("user");
