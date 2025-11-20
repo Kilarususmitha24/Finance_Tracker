@@ -34,19 +34,22 @@ import {
   Brightness7 as LightIcon,
   Logout as LogoutIcon,
 } from "@mui/icons-material";
+
 import { useAuth } from "../contexts/AuthContext";
 import { useTheme } from "../contexts/ThemeContext";
 
 const drawerWidth = 240;
 
-export default function MainLayout({ children, isAdmin = false }) {
+export default function MainLayout({ children }) {
   const { user, logout } = useAuth();
   const { theme, toggleTheme, mode } = useTheme();
   const navigate = useNavigate();
   const location = useLocation();
-  
-  // Determine if we're in admin mode (either from props or user role)
-  const isAdminMode = isAdmin || user?.role === 'admin';
+
+  // 🔥 FIXED ROLE DETECTION: Always reliable
+  const storedUser = JSON.parse(localStorage.getItem("user"));
+  const role = user?.role || storedUser?.role || "user";
+  const isAdminMode = role.toLowerCase() === "admin";
 
   const [anchorEl, setAnchorEl] = useState(null);
   const handleMenuOpen = (e) => setAnchorEl(e.currentTarget);
@@ -54,10 +57,7 @@ export default function MainLayout({ children, isAdmin = false }) {
 
   const handleProfile = () => {
     handleMenuClose();
-    // Check if we're already on the profile page to prevent unnecessary navigation
-    if (location.pathname !== '/user/profile') {
-      navigate("/user/profile");
-    }
+    navigate("/user/profile");
   };
 
   const handleLogout = () => {
@@ -66,7 +66,7 @@ export default function MainLayout({ children, isAdmin = false }) {
     navigate("/login");
   };
 
-  // Sidebar menu items for users
+  // User menu
   const userMenu = [
     { text: "Dashboard", icon: <DashboardIcon />, path: "/user/dashboard" },
     { text: "Expenses", icon: <ReceiptIcon />, path: "/user/expenses" },
@@ -79,7 +79,7 @@ export default function MainLayout({ children, isAdmin = false }) {
     { text: "Profile", icon: <ProfileIcon />, path: "/user/profile" },
   ];
 
-  // Sidebar menu items for admins
+  // Admin menu
   const adminMenu = [
     { text: "Dashboard", icon: <DashboardIcon />, path: "/admin/dashboard" },
     { text: "User Expenses", icon: <ReceiptIcon />, path: "/admin/expenses" },
@@ -100,93 +100,30 @@ export default function MainLayout({ children, isAdmin = false }) {
         sx={{
           zIndex: (theme) => theme.zIndex.drawer + 1,
           bgcolor: mode === "light" ? theme.palette.primary.main : "#1a1a1a",
-          color: "#ffffff",
-          backgroundImage: 'none',
-          boxShadow: 'none',
-          borderBottom: '1px solid',
-          borderColor: mode === 'light' ? 'rgba(0, 0, 0, 0.12)' : 'rgba(255, 255, 255, 0.12)',
-          transition: 'background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease',
+          color: "#fff",
         }}
       >
-        <Toolbar sx={{ width: "100%", display: "flex", justifyContent: "space-between" }}>
-          <Typography variant="h6" noWrap component="div" sx={{ fontWeight: 600 }}>
-            {isAdminMode ? '👑 Admin Dashboard' : '💰 Finance Tracker'}
+        <Toolbar sx={{ justifyContent: "space-between" }}>
+          <Typography variant="h6" sx={{ fontWeight: 600 }}>
+            {isAdminMode ? "👑 Admin Dashboard" : "💰 Finance Tracker"}
           </Typography>
 
-          <Box display="flex" alignItems="center" gap={1}>
-            {/* Theme Toggle Button */}
-            <IconButton
-              color="inherit"
-              onClick={toggleTheme}
-              sx={{ color: "#ffffff" }}
-            >
+          <Box display="flex" alignItems="center">
+            <IconButton color="inherit" onClick={toggleTheme}>
               {mode === "dark" ? <LightIcon /> : <DarkIcon />}
             </IconButton>
 
-            {/* Profile Menu */}
             <IconButton color="inherit" onClick={handleMenuOpen}>
-              <ProfileIcon sx={{ color: "#ffffff" }} />
+              <ProfileIcon />
             </IconButton>
-            <Menu
-              anchorEl={anchorEl}
-              open={Boolean(anchorEl)}
-              onClose={handleMenuClose}
-              anchorOrigin={{
-                vertical: 'bottom',
-                horizontal: 'right',
-              }}
-              transformOrigin={{
-                vertical: 'top',
-                horizontal: 'right',
-              }}
-              PaperProps={{
-                elevation: 3,
-                sx: {
-                  mt: 1.5,
-                  minWidth: 180,
-                  bgcolor: mode === 'light' ? '#ffffff' : '#1e1e1e',
-                  color: mode === 'light' ? '#111827' : '#e5e5e5',
-                  border: `1px solid ${mode === 'light' ? 'rgba(0, 0, 0, 0.12)' : 'rgba(255, 255, 255, 0.12)'}`,
-                  '& .MuiMenuItem-root': {
-                    py: 1.5,
-                    px: 2,
-                    '&:hover': {
-                      bgcolor: mode === 'light' ? 'rgba(0, 0, 0, 0.04)' : 'rgba(255, 255, 255, 0.08)',
-                    },
-                  },
-                },
-              }}
-              MenuListProps={{
-                'aria-labelledby': 'account-menu-button',
-              }}
-            >
-              <Box sx={{ px: 2, py: 1.5, borderBottom: `1px solid ${mode === 'light' ? 'rgba(0, 0, 0, 0.12)' : 'rgba(255, 255, 255, 0.12)'}` }}>
-                <Typography variant="subtitle2" fontWeight={600}>
-                  {user?.name || 'User'}
-                </Typography>
-                <Typography variant="caption" color="text.secondary">
-                  {user?.email || 'user@example.com'}
-                </Typography>
-              </Box>
-              <MenuItem 
-                onClick={handleProfile}
-                selected={location.pathname === '/user/profile'}
-                sx={{
-                  '&.Mui-selected': {
-                    bgcolor: mode === 'light' ? 'rgba(99, 102, 241, 0.08)' : 'rgba(165, 180, 252, 0.08)',
-                    '&:hover': {
-                      bgcolor: mode === 'light' ? 'rgba(99, 102, 241, 0.12)' : 'rgba(165, 180, 252, 0.12)',
-                    },
-                  },
-                }}
-              >
-                <ProfileIcon fontSize="small" sx={{ mr: 1.5, color: 'text.secondary' }} /> 
-                <Typography variant="body2">Profile</Typography>
+
+            <Menu anchorEl={anchorEl} open={Boolean(anchorEl)} onClose={handleMenuClose}>
+              <MenuItem onClick={handleProfile}>
+                <ProfileIcon sx={{ mr: 1 }} /> Profile
               </MenuItem>
-              <Divider sx={{ my: 0.5 }} />
+              <Divider />
               <MenuItem onClick={handleLogout}>
-                <LogoutIcon fontSize="small" sx={{ mr: 1.5, color: 'text.secondary' }} />
-                <Typography variant="body2">Logout</Typography>
+                <LogoutIcon sx={{ mr: 1 }} /> Logout
               </MenuItem>
             </Menu>
           </Box>
@@ -198,14 +135,9 @@ export default function MainLayout({ children, isAdmin = false }) {
         variant="permanent"
         sx={{
           width: drawerWidth,
-          flexShrink: 0,
           "& .MuiDrawer-paper": {
             width: drawerWidth,
-            boxSizing: "border-box",
-            backgroundColor:
-              mode === "light" ? "#f8fafc" : "#1e1e1e",
-            color: mode === "light" ? "#111827" : "#e5e5e5",
-            transition: "background-color 0.3s ease, color 0.3s ease",
+            bgcolor: mode === "light" ? "#f8fafc" : "#1e1e1e",
           },
         }}
       >
@@ -219,28 +151,10 @@ export default function MainLayout({ children, isAdmin = false }) {
                 to={item.path}
                 selected={location.pathname === item.path}
               >
-                <ListItemIcon
-                  sx={{
-                    color:
-                      location.pathname === item.path
-                        ? theme.palette.primary.main
-                        : mode === "light"
-                        ? "#6b7280"
-                        : "#b0b0b0",
-                  }}
-                >
+                <ListItemIcon>
                   {item.icon}
                 </ListItemIcon>
-                <ListItemText
-                  primary={item.text}
-                  primaryTypographyProps={{
-                    color:
-                      location.pathname === item.path
-                        ? theme.palette.primary.main
-                        : theme.palette.text.primary,
-                    fontWeight: location.pathname === item.path ? 600 : 400,
-                  }}
-                />
+                <ListItemText primary={item.text} />
               </ListItemButton>
             </ListItem>
           ))}
@@ -253,10 +167,7 @@ export default function MainLayout({ children, isAdmin = false }) {
         sx={{
           flexGrow: 1,
           bgcolor: theme.palette.background.default,
-          color: theme.palette.text.primary,
-          minHeight: "100vh",
           p: 3,
-          transition: "background-color 0.3s ease, color 0.3s ease",
         }}
       >
         <Toolbar />
